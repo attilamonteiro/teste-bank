@@ -8,67 +8,95 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 
-
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.ConfigureInfrastructureDependencies();
-builder.Services.ConfigureDomainDependencies();
-builder.Services.ConfigureAutoMapperependencies();
-
-builder.Services.AddConnections(builder.Configuration);
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-// Identity
-builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
+public partial class Program
 {
-    opt.Password.RequiredLength = 8;
-    opt.Password.RequireNonAlphanumeric = false;
-    opt.Password.RequireUppercase = false;
-    opt.User.RequireUniqueEmail = true;
-})
-    .AddEntityFrameworkStores<AppDbContext>()
-    .AddDefaultTokenProviders();
-
-// JWT
-var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;
-builder.Services.AddSingleton(jwt);
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+    public static void Main(string[] args)
     {
-        options.TokenValidationParameters = new TokenValidationParameters
+        var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.ConfigureInfrastructureDependencies();
+        builder.Services.ConfigureDomainDependencies();
+        builder.Services.ConfigureAutoMapperependencies();
+
+        builder.Services.AddConnections(builder.Configuration);
+
+        builder.Services.AddControllers();
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen(c =>
         {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwt.Issuer,
-            ValidAudience = jwt.Audience,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
-            ClockSkew = TimeSpan.Zero
-        };
-    });
+            c.SwaggerDoc("v1", new() { Title = "EstudoApi", Version = "v1" });
+            c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                Description = "JWT Authorization header usando o esquema Bearer. Exemplo: 'Bearer {token}'",
+                Name = "Authorization",
+                Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT"
+            });
+            c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+            {
+                {
+                    new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                    {
+                        Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                        {
+                            Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    new string[] {}
+                }
+            });
+        });
 
-builder.Services.AddAuthorization();
-builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+        // Identity
+        builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
+        {
+            opt.Password.RequiredLength = 8;
+            opt.Password.RequireNonAlphanumeric = false;
+            opt.Password.RequireUppercase = false;
+            opt.User.RequireUniqueEmail = true;
+        })
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
 
+        // JWT
+        var jwt = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;
+        builder.Services.AddSingleton(jwt);
 
-var app = builder.Build();
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwt.Issuer,
+                    ValidAudience = jwt.Audience,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
+                    ClockSkew = TimeSpan.Zero
+                };
+            });
 
+        builder.Services.AddAuthorization();
+        builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
+        var app = builder.Build();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+
+        app.UseHttpsRedirection();
+        app.UseAuthentication();
+        app.UseAuthorization();
+        app.MapControllers();
+
+        app.Run();
+    }
 }
-
-
-app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-
-app.Run();

@@ -7,7 +7,8 @@ using EstudoApi.Domain.Contracts;
 
 namespace EstudoApi.Domain.CQRS.Handlers.Account
 {
-    public class LoginAccountCommandHandler
+    using MediatR;
+    public class LoginAccountCommandHandler : IRequestHandler<LoginAccountCommand, (bool Success, string? Token, string? Error, string? Tipo)>
     {
         private readonly IAccountRepository _repository;
         private readonly IJwtTokenService _jwtService;
@@ -16,7 +17,7 @@ namespace EstudoApi.Domain.CQRS.Handlers.Account
             _repository = repository;
             _jwtService = jwtService;
         }
-        public async Task<(bool Success, string? Token, string? Error, string? Tipo)> Handle(LoginAccountCommand command)
+        public async Task<(bool Success, string? Token, string? Error, string? Tipo)> Handle(LoginAccountCommand command, CancellationToken cancellationToken)
         {
             EstudoApi.Domain.Models.Account? account = null;
             if (command.NumeroConta.HasValue)

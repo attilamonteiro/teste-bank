@@ -19,7 +19,8 @@ public partial class Program
 
 
         // MediatR registration
-        builder.Services.AddMediatR(typeof(EstudoApi.Domain.CQRS.Handlers.Account.CreateAccountCommandHandler));
+    builder.Services.AddMediatR(typeof(EstudoApi.Domain.CQRS.Handlers.Account.CreateAccountCommandHandler),
+                    typeof(EstudoApi.Domain.CQRS.Handlers.Account.LoginAccountCommandHandler));
         builder.Services.AddScoped<EstudoApi.Infrastructure.CQRS.Handlers.LoginUserCommandHandler>();
 
         builder.Services.ConfigureInfrastructureDependencies();

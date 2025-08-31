@@ -1,0 +1,47 @@
+# Exemplo de pipeline CI/CD para Azure DevOps
+trigger:
+  - master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '8.0.x'
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- script: dotnet restore EstudoApi/EstudoApi.csproj
+  displayName: 'Restore NuGet packages'
+
+- script: dotnet build EstudoApi/EstudoApi.csproj --configuration $(buildConfiguration) --no-restore
+  displayName: 'Build'
+
+- script: dotnet test EstudoApi.Tests/EstudoApi.Tests.csproj --configuration $(buildConfiguration) --no-build --logger trx
+  displayName: 'Run Tests'
+
+#- task: Docker@2
+#  displayName: 'Build and push Docker image'
+#  inputs:
+#    command: buildAndPush
+#    containerRegistry: '<NOME_DO_SERVICE_CONNECTION>'
+#    repository: '<SEU_REGISTRO>/estudoapi'
+#    dockerfile: 'EstudoApi/Dockerfile'
+#    tags: |
+#      latest
+
+- task: KubernetesManifest@1
+  displayName: 'Deploy to Kubernetes'
+  inputs:
+    action: deploy
+    manifests: |
+      k8s/deployment.yaml
+      k8s/service.yaml
+      k8s/ingress.yaml
+      k8s/postgres.yaml
+      k8s/jwt-secret.yaml
+    imagePullSecrets: <SEU_IMAGE_PULL_SECRET>

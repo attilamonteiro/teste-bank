@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
-namespace EstudoApi.Models
+namespace EstudoApi.Domain.Models
 {
     public class BaseModel
     {

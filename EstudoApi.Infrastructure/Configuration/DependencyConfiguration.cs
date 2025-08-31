@@ -8,7 +8,8 @@ namespace EstudoApi.Infrastructure.Configuration
     {
         public static void ConfigureInfrastructureDependencies(this IServiceCollection services)
         {
-            services.AddScoped<IProductRepository, ProductRepository>();
+            // Removed ProductRepository registration
+            services.AddScoped<IAccountRepository, AccountRepository>();
             services.AddAutoMapper(typeof(DependencyConfiguration).Assembly);
         }
     }

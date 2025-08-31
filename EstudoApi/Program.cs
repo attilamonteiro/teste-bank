@@ -1,3 +1,6 @@
+
+using MediatR;
+using Swashbuckle.AspNetCore.Filters;
 using System.Text;
 using EstudoApi.Domain.Configuration;
 using EstudoApi.Infrastructure.Configuration;
@@ -13,6 +16,11 @@ public partial class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+
+        // MediatR registration
+        builder.Services.AddMediatR(typeof(EstudoApi.Domain.CQRS.Handlers.Account.CreateAccountCommandHandler));
+        builder.Services.AddScoped<EstudoApi.Infrastructure.CQRS.Handlers.LoginUserCommandHandler>();
 
         builder.Services.ConfigureInfrastructureDependencies();
         builder.Services.ConfigureDomainDependencies();
@@ -48,7 +56,12 @@ public partial class Program
                     new string[] {}
                 }
             });
+            c.ExampleFilters();
         });
+        builder.Services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.CreateAccountCommandExample>();
+        builder.Services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.RegisterUserRequestExample>();
+        builder.Services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.LoginRequestExample>();
+        builder.Services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.LoginAccountCommandExample>();
 
         // Identity
         builder.Services.AddIdentity<AppUser, IdentityRole>(opt =>
@@ -76,13 +89,12 @@ public partial class Program
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwt.Issuer,
                     ValidAudience = jwt.Audience,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key)),
                     ClockSkew = TimeSpan.Zero
                 };
             });
 
         builder.Services.AddAuthorization();
-        builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+        builder.Services.AddScoped<EstudoApi.Domain.Contracts.IJwtTokenService, JwtTokenService>();
 
         var app = builder.Build();
 
@@ -92,7 +104,6 @@ public partial class Program
             app.UseSwaggerUI();
         }
 
-        app.UseHttpsRedirection();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();

@@ -1,0 +1,33 @@
+version: "3.9"
+services:
+  api:
+    build:
+      context: .
+      dockerfile: EstudoApi/Dockerfile
+    image: estudoapi:local
+    ports:
+      - "8080:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      # - JWT_SECRET=suasecretlocal
+    depends_on:
+      - db
+    networks:
+      - estudoapi-net
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=productsdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    networks:
+      - estudoapi-net
+volumes:
+  dbdata:
+networks:
+  estudoapi-net:
+    driver: bridge

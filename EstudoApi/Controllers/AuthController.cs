@@ -8,31 +8,58 @@ using Microsoft.AspNetCore.Mvc;
 namespace EstudoApi.Controllers;
 
 [ApiController]
-[Route("api/v1/auth")]
+[Route("api/auth")]
 [Produces(MediaTypeNames.Application.Json)]
+
 public class AuthController : ControllerBase
 {
+    private readonly Infrastructure.CQRS.Handlers.LoginUserCommandHandler _loginHandler;
     private readonly UserManager<AppUser> _userManager;
-    private readonly IJwtTokenService _jwt;
 
-    public AuthController(UserManager<AppUser> userManager, IJwtTokenService jwt)
+    public AuthController(Infrastructure.CQRS.Handlers.LoginUserCommandHandler loginHandler, UserManager<AppUser> userManager)
     {
+        _loginHandler = loginHandler;
         _userManager = userManager;
-        _jwt = jwt;
     }
 
     [HttpPost("login")]
+    [Swashbuckle.AspNetCore.Filters.SwaggerRequestExample(typeof(LoginRequest), typeof(EstudoApi.SwaggerExamples.LoginRequestExample))]
     public async Task<IActionResult> Login([FromBody] LoginRequest req)
     {
-        var user = await _userManager.FindByEmailAsync(req.Email);
-        if (user is null) return Unauthorized(new { error = "Credenciais inválidas." });
+        var command = new Domain.CQRS.Commands.LoginUserCommand { Email = req.Email, Password = req.Senha };
+        var result = await _loginHandler.Handle(command);
+        if (result == null)
+            return Unauthorized(new { error = "Credenciais inválidas." });
 
-        var ok = await _userManager.CheckPasswordAsync(user, req.Senha);
-        if (!ok) return Unauthorized(new { error = "Credenciais inválidas." });
+        var (token, expiresAt) = result.Value;
+        return Ok(new AuthResponse(token, expiresAt));
+    }
 
-        var roles = await _userManager.GetRolesAsync(user);
-        var (token, expires) = _jwt.CreateToken(user, roles);
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterUserRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Senha) ||
+            string.IsNullOrWhiteSpace(req.Nome) || string.IsNullOrWhiteSpace(req.Cpf))
+            return BadRequest(new { error = "Campos obrigatórios ausentes." });
 
-        return Ok(new AuthResponse(token, expires));
+        var existsByEmail = await _userManager.FindByEmailAsync(req.Email);
+        if (existsByEmail != null) return Conflict(new { error = "E-mail já cadastrado." });
+
+        var existsByCpf = _userManager.Users.FirstOrDefault(u => u.Cpf == req.Cpf);
+        if (existsByCpf != null) return Conflict(new { error = "CPF já cadastrado." });
+
+        var user = new AppUser
+        {
+            UserName = req.Email,
+            Email = req.Email,
+            Nome = req.Nome,
+            Cpf = req.Cpf
+        };
+
+        var result = await _userManager.CreateAsync(user, req.Senha);
+        if (!result.Succeeded)
+            return BadRequest(new { error = "Falha ao criar usuário.", details = result.Errors });
+
+        return CreatedAtAction(nameof(Register), new { id = user.Id }, new { id = user.Id });
     }
 }

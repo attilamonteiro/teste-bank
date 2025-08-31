@@ -3,6 +3,7 @@ using EstudoApi.Contracts;
 using EstudoApi.Infrastructure.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EstudoApi.Controllers;
 
@@ -18,11 +19,28 @@ public class UsersController : ControllerBase
         _userManager = userManager;
     }
 
+    /// <summary>
+    /// Cria um novo usuário.
+    /// </summary>
+    /// <remarks>
+    /// Exemplo de request:
+    ///
+    ///     {
+    ///         "nome": "João da Silva",
+    ///         "email": "joao@email.com",
+    ///         "senha": "minhasenha123",
+    ///         "cpf": "12345678901"
+    ///     }
+    /// </remarks>
     [HttpPost]
+    [ProducesResponseType(typeof(object), 201)]
+    [ProducesResponseType(typeof(object), 400)]
+    [ProducesResponseType(typeof(object), 409)]
+    [Swashbuckle.AspNetCore.Filters.SwaggerRequestExample(typeof(RegisterUserRequest), typeof(EstudoApi.SwaggerExamples.RegisterUserRequestExample))]
     public async Task<IActionResult> Create([FromBody] RegisterUserRequest req)
     {
         if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Senha) ||
-            string.IsNullOrWhiteSpace(req.Nome)  || string.IsNullOrWhiteSpace(req.Cpf))
+            string.IsNullOrWhiteSpace(req.Nome) || string.IsNullOrWhiteSpace(req.Cpf))
             return BadRequest(new { error = "Campos obrigatórios ausentes." });
 
         var existsByEmail = await _userManager.FindByEmailAsync(req.Email);

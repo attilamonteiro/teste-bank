@@ -41,10 +41,10 @@ public partial class Program
         var jwtOptions = builder.Configuration.GetSection("Jwt").Get<EstudoApi.Infrastructure.Auth.JwtOptions>()!;
         builder.Services.Configure<EstudoApi.Infrastructure.Auth.JwtOptions>(builder.Configuration.GetSection("Jwt"));
         builder.Services.AddJwtAuthentication(jwtOptions);
-        
+
         // JWT Token Service for DI
         builder.Services.AddScoped<EstudoApi.Domain.Contracts.IJwtTokenService, EstudoApi.Infrastructure.Auth.JwtTokenService>();
-        
+
         builder.Services.AddAuthorization();
 
         var app = builder.Build();

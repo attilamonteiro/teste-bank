@@ -9,95 +9,40 @@ namespace EstudoApi.Controllers
     [Route("api/conta")]
     public class ContaCorrenteController : ControllerBase
     {
+
         private readonly IMediator _mediator;
         public ContaCorrenteController(IMediator mediator)
         {
+            Console.WriteLine("[DEBUG] ContaCorrenteController instanciado");
             _mediator = mediator;
         }
 
+
         /// <summary>
-        /// Cadastra uma nova conta corrente.
+        /// Consulta o saldo da conta corrente.
         /// </summary>
         /// <remarks>
-        /// Exemplo de request:
+        /// Exemplo de resposta:
         ///
         ///     {
-        ///         "cpf": "12345678901",
-        ///         "senha": "minhasenha123"
+        ///         "numeroConta": 123456,
+        ///         "nomeTitular": "João da Silva",
+        ///         "dataConsulta": "2023-10-10T10:00:00",
+        ///         "saldo": "1000.00"
         ///     }
         /// </remarks>
-        [HttpPost]
-        [ProducesResponseType(typeof(object), 201)]
-        [ProducesResponseType(typeof(object), 400)]
-        [Swashbuckle.AspNetCore.Filters.SwaggerRequestExample(typeof(CreateAccountCommand), typeof(EstudoApi.SwaggerExamples.CreateAccountCommandExample))]
-        public async Task<IActionResult> CadastrarConta([FromBody] CreateAccountCommand command)
-        {
-            var result = await _mediator.Send(command);
-            if (result.Success)
-                return Created(string.Empty, new { numeroConta = result.NumeroConta });
-            return BadRequest(new { mensagem = result.Error, tipo = result.Tipo });
-        }
-
-        [HttpPost("login")]
-        [Swashbuckle.AspNetCore.Filters.SwaggerRequestExample(typeof(LoginAccountCommand), typeof(EstudoApi.SwaggerExamples.LoginAccountCommandExample))]
-        public async Task<IActionResult> Login([FromBody] LoginAccountCommand command)
-        {
-            var result = await _mediator.Send(command);
-            if (result.Success)
-                return Ok(new { token = result.Token });
-            return Unauthorized(new { mensagem = result.Error, tipo = result.Tipo });
-        }
-
-        [HttpPost("inativar")]
-        public async Task<IActionResult> InativarConta([FromBody] InactivateAccountCommand command)
-        {
-            // Recupera o ID da conta do token JWT
-            var accountIdClaim = User.FindFirst("accountId")?.Value;
-            if (string.IsNullOrEmpty(accountIdClaim) || !int.TryParse(accountIdClaim, out var accountId))
-                return Forbid();
-            command.AccountId = accountId;
-            var result = await _mediator.Send(command);
-            if (result.Success)
-                return NoContent();
-            if (result.Tipo == "USER_UNAUTHORIZED")
-                return StatusCode(403, new { mensagem = result.Error, tipo = result.Tipo });
-            if (result.Tipo == "INVALID_ACCOUNT" || result.Tipo == "INACTIVE_ACCOUNT")
-                return BadRequest(new { mensagem = result.Error, tipo = result.Tipo });
-            return BadRequest(new { mensagem = result.Error, tipo = result.Tipo });
-        }
-
-        [HttpPost("movimentacao")]
-        [Swashbuckle.AspNetCore.Filters.SwaggerRequestExample(typeof(AccountMovementCommand), typeof(EstudoApi.SwaggerExamples.AccountMovementCommandExample))]
-        public async Task<IActionResult> MovimentarConta([FromBody] AccountMovementCommand command)
-        {
-            // Recupera o número da conta do token se não informado
-            if (command.NumeroConta == null)
-            {
-                var accountIdClaim = User.FindFirst("accountId")?.Value;
-                if (string.IsNullOrEmpty(accountIdClaim) || !int.TryParse(accountIdClaim, out var accountId))
-                    return Forbid();
-                command.NumeroConta = accountId;
-            }
-            var result = await _mediator.Send(command);
-            if (result.Success)
-                return NoContent();
-            if (result.Tipo == "INVALID_ACCOUNT" || result.Tipo == "INACTIVE_ACCOUNT" || result.Tipo == "INVALID_VALUE" || result.Tipo == "INVALID_TYPE")
-                return BadRequest(new { mensagem = result.Error, tipo = result.Tipo });
-            return BadRequest(new { mensagem = result.Error, tipo = result.Tipo });
-        }
-
         [HttpGet("saldo")]
+        [Authorize]
         public async Task<IActionResult> ConsultarSaldo()
         {
-            // Recupera o número da conta do token JWT
-            var accountIdClaim = User.FindFirst("accountId")?.Value;
-            if (string.IsNullOrEmpty(accountIdClaim) || !int.TryParse(accountIdClaim, out var accountId))
-                return Forbid();
+            // Extrai o accountId do token JWT usando helper
+            var accountId = EstudoApi.Helpers.JwtClaimHelper.ExtrairNumeroConta(User);
+            if (!accountId.HasValue)
+                return StatusCode(403, new { mensagem = "Token inválido ou expirado.", tipo = "USER_UNAUTHORIZED" });
 
-            // Buscar conta
-            var result = await _mediator.Send(new GetAccountBalanceQuery { NumeroConta = accountId });
+            var result = await _mediator.Send(new EstudoApi.Domain.CQRS.Commands.Account.GetAccountBalanceQuery { NumeroConta = accountId.Value });
             if (!result.Found)
-                return NotFound(new { mensagem = "Conta não encontrada.", tipo = "INVALID_ACCOUNT" });
+                return BadRequest(new { mensagem = "Apenas contas cadastradas podem consultar saldo.", tipo = "INVALID_ACCOUNT" });
             if (!result.Ativo)
                 return BadRequest(new { mensagem = "Apenas contas ativas podem consultar saldo.", tipo = "INACTIVE_ACCOUNT" });
             if (result.Balance < 0)
@@ -107,8 +52,9 @@ namespace EstudoApi.Controllers
                 numeroConta = result.NumeroConta,
                 nomeTitular = result.NomeTitular,
                 dataConsulta = result.DataConsulta.ToString("yyyy-MM-ddTHH:mm:ss"),
-                saldo = result.Balance.ToString("F2")
+                saldo = result.Balance.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
             });
         }
+
     }
 }

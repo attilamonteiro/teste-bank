@@ -12,9 +12,9 @@ public class JwtTokenService : IJwtTokenService
 {
     private readonly JwtOptions _opts;
 
-    public JwtTokenService(JwtOptions opts)
+    public JwtTokenService(Microsoft.Extensions.Options.IOptions<JwtOptions> opts)
     {
-        _opts = opts;
+        _opts = opts.Value;
     }
 
     public (string token, DateTime expiresAt) CreateToken(object userObj, IList<string>? roles = null)
@@ -26,11 +26,21 @@ public class JwtTokenService : IJwtTokenService
         {
             new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new(ClaimTypes.NameIdentifier, user.Id),
             new(ClaimTypes.Name, user.Nome),
             new(ClaimTypes.Email, user.Email!),
             new("cpf", user.Cpf)
         };
+
+        // Se o usuário tiver AccountId válido, adiciona o claim accountId
+        var accountIdProp = user.GetType().GetProperty("AccountId");
+        if (accountIdProp != null)
+        {
+            var accountIdValue = accountIdProp.GetValue(user);
+            if (accountIdValue != null && int.TryParse(accountIdValue.ToString(), out int accId) && accId > 0)
+            {
+                claims.Add(new Claim("accountId", accId.ToString()));
+            }
+        }
 
         if (roles != null)
             claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));
@@ -58,6 +68,7 @@ public class JwtTokenService : IJwtTokenService
         {
             new(JwtRegisteredClaimNames.Sub, accountId.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(ClaimTypes.NameIdentifier, accountId.ToString()),
             new("accountId", accountId.ToString())
         };
 

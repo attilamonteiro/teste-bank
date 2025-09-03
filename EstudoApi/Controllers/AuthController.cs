@@ -1,8 +1,5 @@
 using System.Net.Mime;
-using EstudoApi.Contracts;
-using EstudoApi.Infrastructure.Auth;
-using EstudoApi.Infrastructure.Identity;
-using Microsoft.AspNetCore.Identity;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EstudoApi.Controllers;
@@ -13,53 +10,43 @@ namespace EstudoApi.Controllers;
 
 public class AuthController : ControllerBase
 {
-    private readonly Infrastructure.CQRS.Handlers.LoginUserCommandHandler _loginHandler;
-    private readonly UserManager<AppUser> _userManager;
+    private readonly IMediator _mediator;
 
-    public AuthController(Infrastructure.CQRS.Handlers.LoginUserCommandHandler loginHandler, UserManager<AppUser> userManager)
+    public AuthController(IMediator mediator)
     {
-        _loginHandler = loginHandler;
-        _userManager = userManager;
+        _mediator = mediator;
     }
 
-    [HttpPost("login")]
-    [Swashbuckle.AspNetCore.Filters.SwaggerRequestExample(typeof(LoginRequest), typeof(EstudoApi.SwaggerExamples.LoginRequestExample))]
-    public async Task<IActionResult> Login([FromBody] LoginRequest req)
+    [HttpPost("conta/cadastrar")]
+    public async Task<IActionResult> CadastrarContaCorrente([FromBody] EstudoApi.Domain.CQRS.Commands.Account.CreateAccountCommand command)
     {
-        var command = new Domain.CQRS.Commands.LoginUserCommand { Email = req.Email, Password = req.Senha };
-        var result = await _loginHandler.Handle(command);
-        if (result == null)
-            return Unauthorized(new { error = "Credenciais inválidas." });
-
-        var (token, expiresAt) = result.Value;
-        return Ok(new AuthResponse(token, expiresAt));
-    }
-
-    [HttpPost("register")]
-    public async Task<IActionResult> Register([FromBody] RegisterUserRequest req)
-    {
-        if (string.IsNullOrWhiteSpace(req.Email) || string.IsNullOrWhiteSpace(req.Senha) ||
-            string.IsNullOrWhiteSpace(req.Nome) || string.IsNullOrWhiteSpace(req.Cpf))
-            return BadRequest(new { error = "Campos obrigatórios ausentes." });
-
-        var existsByEmail = await _userManager.FindByEmailAsync(req.Email);
-        if (existsByEmail != null) return Conflict(new { error = "E-mail já cadastrado." });
-
-        var existsByCpf = _userManager.Users.FirstOrDefault(u => u.Cpf == req.Cpf);
-        if (existsByCpf != null) return Conflict(new { error = "CPF já cadastrado." });
-
-        var user = new AppUser
+        // Validação simples de CPF (pode ser substituída por uma validação mais robusta)
+        if (string.IsNullOrWhiteSpace(command.Cpf) || command.Cpf.Length != 11 || !command.Cpf.All(char.IsDigit))
         {
-            UserName = req.Email,
-            Email = req.Email,
-            Nome = req.Nome,
-            Cpf = req.Cpf
-        };
+            return BadRequest(new { mensagem = "CPF inválido.", tipo = "INVALID_DOCUMENT" });
+        }
 
-        var result = await _userManager.CreateAsync(user, req.Senha);
-        if (!result.Succeeded)
-            return BadRequest(new { error = "Falha ao criar usuário.", details = result.Errors });
-
-        return CreatedAtAction(nameof(Register), new { id = user.Id }, new { id = user.Id });
+        var result = await _mediator.Send(command);
+        if (result.Success && result.NumeroConta.HasValue)
+            return Created(string.Empty, new { numeroConta = result.NumeroConta });
+        return BadRequest(new { mensagem = result.Error ?? "Erro ao cadastrar conta.", tipo = result.Tipo ?? "UNKNOWN_ERROR" });
     }
+
+    [HttpPost("conta/login")]
+    public async Task<IActionResult> LoginContaCorrente([FromBody] EstudoApi.Domain.CQRS.Commands.Account.LoginAccountCommand command)
+    {
+        if ((command.NumeroConta == null || command.NumeroConta <= 0) && string.IsNullOrWhiteSpace(command.Cpf))
+        {
+            return Unauthorized(new { mensagem = "Informe o número da conta ou CPF.", tipo = "USER_UNAUTHORIZED" });
+        }
+        if (string.IsNullOrWhiteSpace(command.Senha))
+        {
+            return Unauthorized(new { mensagem = "Senha obrigatória.", tipo = "USER_UNAUTHORIZED" });
+        }
+        var result = await _mediator.Send(command);
+        if (result.Success && !string.IsNullOrEmpty(result.Token))
+            return Ok(new { token = result.Token });
+        return Unauthorized(new { mensagem = result.Error ?? "Credenciais inválidas.", tipo = result.Tipo ?? "USER_UNAUTHORIZED" });
+    }
+
 }

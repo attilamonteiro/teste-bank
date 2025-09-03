@@ -8,6 +8,6 @@ namespace EstudoApi.Controllers;
 public class PingController : ControllerBase
 {
     [HttpGet]
-    [Authorize]
+    [AllowAnonymous]
     public IActionResult Get() => Ok(new { message = "pong (autenticado)" });
 }

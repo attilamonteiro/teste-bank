@@ -6,6 +6,7 @@ namespace EstudoApi.Domain.Configuration
     {
         public static void ConfigureDomainDependencies(this IServiceCollection services)
         {
+            services.AddScoped<EstudoApi.Domain.Services.IAccountService, EstudoApi.Domain.Services.AccountService>();
         }
     }
 }

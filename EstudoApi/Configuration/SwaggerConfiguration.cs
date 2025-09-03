@@ -38,6 +38,7 @@ namespace EstudoApi.Configuration
             });
             services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.CreateAccountCommandExample>();
             services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.LoginAccountCommandExample>();
+            services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.AccountMovementCommandExample>();
             return services;
         }
     }

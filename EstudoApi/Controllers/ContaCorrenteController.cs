@@ -56,5 +56,87 @@ namespace EstudoApi.Controllers
             });
         }
 
+        /// <summary>
+        /// Realiza uma movimentação na conta corrente (crédito ou débito).
+        /// </summary>
+        /// <remarks>
+        /// Exemplo de requisição:
+        ///
+        ///     POST /api/conta/movimentar
+        ///     {
+        ///         "requisicaoId": "req-123456",
+        ///         "numeroConta": 1,
+        ///         "valor": 100.50,
+        ///         "tipo": "C"
+        ///     }
+        ///
+        /// - `requisicaoId`: Identificação única da requisição
+        /// - `numeroConta`: Número da conta (opcional, usa do token se não informado)
+        /// - `valor`: Valor da movimentação (deve ser positivo)
+        /// - `tipo`: Tipo de movimento ("C" = Crédito, "D" = Débito)
+        /// 
+        /// Regras de validação:
+        /// - Apenas contas cadastradas podem receber movimentação
+        /// - Apenas contas ativas podem receber movimentação
+        /// - Apenas valores positivos são aceitos
+        /// - Apenas tipos "C" ou "D" são aceitos
+        /// - Apenas tipo "C" é aceito para conta diferente do usuário logado
+        /// </remarks>
+        [HttpPost("movimentar")]
+        [Authorize]
+        public async Task<IActionResult> Movimentar([FromBody] AccountMovementCommand command)
+        {
+            try
+            {
+                // Extrai o accountId do token JWT
+                var tokenAccountId = EstudoApi.Helpers.JwtClaimHelper.ExtrairNumeroConta(User);
+                if (!tokenAccountId.HasValue)
+                    return StatusCode(403, new { mensagem = "Token inválido ou expirado.", tipo = "USER_UNAUTHORIZED" });
+
+                // Se numeroConta não foi informado, usa o do token
+                if (!command.NumeroConta.HasValue)
+                {
+                    command.NumeroConta = tokenAccountId.Value;
+                }
+                else
+                {
+                    // Se a conta é diferente do usuário logado, apenas crédito é permitido
+                    if (command.NumeroConta.Value != tokenAccountId.Value && command.Tipo != "C")
+                    {
+                        return BadRequest(new
+                        {
+                            mensagem = "Apenas o tipo 'crédito' pode ser aceito caso o número da conta seja diferente do usuário logado.",
+                            tipo = "INVALID_TYPE"
+                        });
+                    }
+                }
+
+                // Executa a movimentação via MediatR
+                var result = await _mediator.Send(command);
+
+                if (!result.Success)
+                {
+                    return BadRequest(new
+                    {
+                        mensagem = result.Error,
+                        tipo = result.Tipo
+                    });
+                }
+
+                // Retorna 204 No Content em caso de sucesso
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                // Log do erro (idealmente usar ILogger)
+                Console.WriteLine($"[ERROR] Erro na movimentação: {ex.Message}");
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro interno do servidor.",
+                    tipo = "INTERNAL_ERROR"
+                });
+            }
+        }
+
     }
 }

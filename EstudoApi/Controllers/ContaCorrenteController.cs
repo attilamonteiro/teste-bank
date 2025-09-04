@@ -138,5 +138,75 @@ namespace EstudoApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Inativa uma conta corrente.
+        /// </summary>
+        /// <remarks>
+        /// Exemplo de requisição:
+        ///
+        ///     POST /api/conta/inativar
+        ///     {
+        ///         "senha": "minhaSenha123"
+        ///     }
+        ///
+        /// - `senha`: Senha da conta corrente (obrigatória para validação)
+        /// 
+        /// Regras de validação:
+        /// - Token JWT válido é obrigatório
+        /// - Apenas contas cadastradas podem ser inativadas
+        /// - A senha deve coincidir com a cadastrada no banco de dados
+        /// - Conta já inativa retorna erro apropriado
+        /// </remarks>
+        [HttpPost("inativar")]
+        [Authorize]
+        public async Task<IActionResult> Inativar([FromBody] InactivateAccountRequest request)
+        {
+            try
+            {
+                // Extrai o accountId do token JWT
+                var accountId = EstudoApi.Helpers.JwtClaimHelper.ExtrairNumeroConta(User);
+                if (!accountId.HasValue)
+                    return StatusCode(403, new { mensagem = "Token inválido ou expirado.", tipo = "USER_UNAUTHORIZED" });
+
+                // Cria o comando para inativação
+                var command = new InactivateAccountCommand
+                {
+                    AccountId = accountId.Value,
+                    Senha = request.Senha
+                };
+
+                // Executa a inativação via MediatR
+                var result = await _mediator.Send(command);
+
+                if (!result.Success)
+                {
+                    return BadRequest(new 
+                    { 
+                        mensagem = result.Error, 
+                        tipo = result.Tipo 
+                    });
+                }
+
+                // Retorna 204 No Content em caso de sucesso
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                // Log do erro (idealmente usar ILogger)
+                Console.WriteLine($"[ERROR] Erro na inativação da conta: {ex.Message}");
+                return StatusCode(500, new 
+                { 
+                    mensagem = "Erro interno do servidor.", 
+                    tipo = "INTERNAL_ERROR" 
+                });
+            }
+        }
+
+        // DTO para a requisição de inativação
+        public class InactivateAccountRequest
+        {
+            public string Senha { get; set; } = string.Empty;
+        }
+
     }
 }

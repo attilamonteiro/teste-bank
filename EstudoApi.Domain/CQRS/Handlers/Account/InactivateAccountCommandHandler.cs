@@ -17,7 +17,7 @@ namespace EstudoApi.Domain.CQRS.Handlers.Account
         {
             var account = await _repository.GetAccount(command.AccountId);
             if (account == null)
-                return (false, "Conta não encontrada.", "INVALID_ACCOUNT");
+                return (false, "Apenas contas correntes cadastradas podem ser inativadas.", "INVALID_ACCOUNT");
             if (!account.Ativo)
                 return (false, "Conta já está inativa.", "INACTIVE_ACCOUNT");
             if (!account.ValidarSenha(command.Senha))

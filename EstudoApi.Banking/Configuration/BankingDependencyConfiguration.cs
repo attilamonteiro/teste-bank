@@ -19,15 +19,15 @@ namespace EstudoApi.Banking.Configuration
             services.AddScoped<ITransferenciaRepository, TransferenciaRepository>();
             services.AddScoped<IIdempotenciaRepository, IdempotenciaRepository>();
 
-            // Registrar serviços de transferência
-            services.AddScoped<IContaCorrenteApiService, ContaCorrenteApiService>();
-
-            // Registrar HttpClient para API calls
-            services.AddHttpClient<IContaCorrenteApiService, ContaCorrenteApiService>(client =>
+            // Registrar HttpClient primeiro
+            services.AddHttpClient<ContaCorrenteApiService>(client =>
             {
                 client.Timeout = TimeSpan.FromSeconds(30);
                 client.DefaultRequestHeaders.Add("User-Agent", "EstudoApi.Banking/1.0");
             });
+
+            // Registrar serviços de transferência
+            services.AddScoped<IContaCorrenteApiService, ContaCorrenteApiService>();
 
             // Registrar HttpContextAccessor para extrair token
             services.AddHttpContextAccessor();

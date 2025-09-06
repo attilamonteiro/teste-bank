@@ -58,7 +58,7 @@ namespace EstudoApi.Tests
             var loginResp = await _client.PostAsJsonAsync("/api/auth/conta/login", new { cpf, senha });
             loginResp.EnsureSuccessStatusCode();
             var loginJson = await loginResp.Content.ReadFromJsonAsync<LoginResponse>();
-            
+
             Assert.NotNull(loginJson);
             Assert.False(string.IsNullOrWhiteSpace(loginJson.token));
 
@@ -92,7 +92,7 @@ namespace EstudoApi.Tests
             var loginResp = await _client.PostAsJsonAsync("/api/auth/conta/login", new { cpf, senha });
             loginResp.EnsureSuccessStatusCode();
             var loginJson = await loginResp.Content.ReadFromJsonAsync<LoginResponse>();
-            
+
             Assert.NotNull(loginJson);
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginJson.token);
 
@@ -121,7 +121,7 @@ namespace EstudoApi.Tests
             var loginResp = await _client.PostAsJsonAsync("/api/auth/conta/login", new { cpf, senha });
             loginResp.EnsureSuccessStatusCode();
             var loginJson = await loginResp.Content.ReadFromJsonAsync<LoginResponse>();
-            
+
             Assert.NotNull(loginJson);
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginJson.token);
 
@@ -154,7 +154,7 @@ namespace EstudoApi.Tests
             var loginResp = await _client.PostAsJsonAsync("/api/auth/conta/login", new { cpf, senha });
             loginResp.EnsureSuccessStatusCode();
             var loginJson = await loginResp.Content.ReadFromJsonAsync<LoginResponse>();
-            
+
             Assert.NotNull(loginJson);
             _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", loginJson.token);
 
@@ -164,7 +164,7 @@ namespace EstudoApi.Tests
             inactivateResp.EnsureSuccessStatusCode();
 
             // Act: tentar fazer uma movimentação após inativação
-            var movementRequest = new 
+            var movementRequest = new
             {
                 requisicaoId = "req-test-inactive",
                 valor = 100.00m,
@@ -181,8 +181,8 @@ namespace EstudoApi.Tests
 
         // DTOs para deserialização
         private class LoginResponse { public string token { get; set; } = string.Empty; }
-        private class ErrorResponse 
-        { 
+        private class ErrorResponse
+        {
             public string mensagem { get; set; } = string.Empty;
             public string tipo { get; set; } = string.Empty;
         }

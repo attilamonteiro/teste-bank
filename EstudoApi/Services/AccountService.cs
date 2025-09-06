@@ -3,8 +3,9 @@ using System.Threading.Tasks;
 using System.Linq;
 using EstudoApi.Interfaces.Repositories;
 using EstudoApi.Domain.CQRS.Commands.Account;
+using EstudoApi.Domain.Services;
 
-namespace EstudoApi.Domain.Services
+namespace EstudoApi.Services
 {
     public class AccountService : IAccountService
     {

@@ -1,0 +1,134 @@
+### Arquivo de testes para as APIs do esquema SQLite da Ana
+### BankMore - Fintech APIs
+
+@baseUrlMain = http://localhost:5041
+@baseUrlBanking = http://localhost:5042
+@token = {{login.response.body.token}}
+
+### 1. Login para obter token
+POST {{baseUrlMain}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "teste@teste.com",
+  "password": "123456"
+}
+
+### 2. Criar nova conta corrente
+POST {{baseUrlMain}}/api/contas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "numero": 12345,
+  "nome": "João da Silva",
+  "senha": "minhasenha123"
+}
+
+### 3. Buscar conta por número
+GET {{baseUrlMain}}/api/contas/12345
+Authorization: Bearer {{token}}
+
+### 4. Consultar saldo
+GET {{baseUrlMain}}/api/contas/12345/saldo
+Authorization: Bearer {{token}}
+
+### 5. Fazer depósito
+POST {{baseUrlMain}}/api/contas/12345/deposito
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "valor": 1000.50
+}
+
+### 6. Listar movimentos
+GET {{baseUrlMain}}/api/contas/12345/movimentos?limite=5
+Authorization: Bearer {{token}}
+
+### 7. Fazer outro depósito
+POST {{baseUrlMain}}/api/contas/12345/deposito
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "valor": 250.75
+}
+
+### 8. Verificar saldo após depósitos
+GET {{baseUrlMain}}/api/contas/12345/saldo
+Authorization: Bearer {{token}}
+
+### 9. Criar segunda conta para testes de transferência
+POST {{baseUrlMain}}/api/contas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "numero": 67890,
+  "nome": "Maria Santos",
+  "senha": "senhamaria456"
+}
+
+### 10. Ping para verificar se API está rodando
+GET {{baseUrlMain}}/api/ping
+
+### ===== TESTES DE MICROSERVIÇOS BANKING =====
+
+### 11. Fazer transferência via API Banking
+POST {{baseUrlBanking}}/api/banking/transfer
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "requisicaoId": "TRANSF-001",
+  "contaOrigem": 12345,
+  "contaDestino": 67890,
+  "valor": 100.00,
+  "descricao": "Transferência teste SQLite"
+}
+
+### ===== TESTES DE VALIDAÇÃO =====
+
+### 12. Tentar criar conta com número duplicado (deve falhar)
+POST {{baseUrlMain}}/api/contas
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "numero": 12345,
+  "nome": "Conta Duplicada",
+  "senha": "senha123"
+}
+
+### 13. Buscar conta inexistente (deve retornar 404)
+GET {{baseUrlMain}}/api/contas/99999
+Authorization: Bearer {{token}}
+
+### 14. Tentar depósito com valor inválido (deve falhar)
+POST {{baseUrlMain}}/api/contas/12345/deposito
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "valor": -100
+}
+
+### 15. Teste sem token (deve retornar 401)
+GET {{baseUrlMain}}/api/contas/12345
+
+### ===== RESUMO DOS ENDPOINTS =====
+# 
+# ✅ POST /api/contas - Criar conta corrente
+# ✅ GET /api/contas/{numero} - Buscar conta por número
+# ✅ GET /api/contas/{numero}/saldo - Consultar saldo
+# ✅ GET /api/contas/{numero}/movimentos - Listar movimentos
+# ✅ POST /api/contas/{numero}/deposito - Fazer depósito
+# ✅ POST /api/banking/transfer - Transferir entre contas (microserviço)
+#
+# 🔄 Próximos endpoints a implementar:
+# - GET /api/transferencias/{numero} - Histórico de transferências
+# - POST /api/contas/{numero}/saque - Fazer saque
+# - GET /api/tarifas/{numero} - Consultar tarifas cobradas
+# - POST /api/auth/conta - Login específico por conta
+#

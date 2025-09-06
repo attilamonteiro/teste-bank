@@ -180,10 +180,10 @@ namespace EstudoApi.Controllers
 
                 if (!result.Success)
                 {
-                    return BadRequest(new 
-                    { 
-                        mensagem = result.Error, 
-                        tipo = result.Tipo 
+                    return BadRequest(new
+                    {
+                        mensagem = result.Error,
+                        tipo = result.Tipo
                     });
                 }
 
@@ -194,10 +194,10 @@ namespace EstudoApi.Controllers
             {
                 // Log do erro (idealmente usar ILogger)
                 Console.WriteLine($"[ERROR] Erro na inativação da conta: {ex.Message}");
-                return StatusCode(500, new 
-                { 
-                    mensagem = "Erro interno do servidor.", 
-                    tipo = "INTERNAL_ERROR" 
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro interno do servidor.",
+                    tipo = "INTERNAL_ERROR"
                 });
             }
         }

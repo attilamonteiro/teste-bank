@@ -1,33 +1,123 @@
 version: "3.9"
 services:
-  api:
+  # API Principal - Autenticação, Contas, Saldos, Movimentações
+  api-main:
     build:
       context: .
       dockerfile: EstudoApi/Dockerfile
-    image: estudoapi:local
+    image: estudoapi-main:local
     ports:
       - "8080:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      # - JWT_SECRET=suasecretlocal
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/BankDb.db
+      - Jwt__Key=SuperSecretKeyForJWTTokenGeneration123456789
+      - Jwt__Issuer=EstudoApi
     depends_on:
-      - db
+      - kafka
     networks:
-      - estudoapi-net
-  db:
-    image: postgres:15
-    environment:
-      - POSTGRES_DB=productsdb
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-    ports:
-      - "5432:5432"
+      - bankapi-net
     volumes:
-      - dbdata:/var/lib/postgresql/data
+      - sqlite_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Banking - Transferências e Operações Bancárias
+  api-banking:
+    build:
+      context: .
+      dockerfile: EstudoApi.Banking/Dockerfile
+    image: estudoapi-banking:local
+    ports:
+      - "8081:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/BankDb.db
+      - Jwt__Key=SuperSecretKeyForJWTTokenGeneration123456789
+      - Jwt__Issuer=EstudoApi
+      - ApiContaCorrente__BaseUrl=http://api-main
+      - Kafka__BootstrapServers=kafka:9092
+    depends_on:
+      - api-main
+      - kafka
     networks:
-      - estudoapi-net
-volumes:
-  dbdata:
+      - bankapi-net
+    volumes:
+      - sqlite_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Apache Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9093:9093"
+    depends_on:
+      - zookeeper
+    networks:
+      - bankapi-net
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "kafka-topics",
+          "--bootstrap-server",
+          "localhost:9092",
+          "--list",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Zookeeper para Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - bankapi-net
+    healthcheck:
+      test: ["CMD-SHELL", "echo ruok | nc localhost 2181 | grep imok"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kafka UI para monitoramento
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    environment:
+      KAFKA_CLUSTERS_0_NAME: BankMore
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports:
+      - "8090:8080"
+    depends_on:
+      - kafka
+    networks:
+      - bankapi-net
+
 networks:
-  estudoapi-net:
+  bankapi-net:
     driver: bridge
+
+volumes:
+  sqlite_data:
+    driver: local

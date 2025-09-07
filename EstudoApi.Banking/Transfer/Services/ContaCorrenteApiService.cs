@@ -2,26 +2,30 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using EstudoApi.Domain.CQRS.Commands.Account;
+using EstudoApi.Domain.Models;
 
 namespace EstudoApi.Banking.Transfer.Services
 {
     /// <summary>
-    /// Serviço para comunicação com a API de Conta Corrente
+    /// Serviço para comunicação com a API de Conta Corrente (Transfer)
     /// </summary>
-    public interface IContaCorrenteApiService
+    public interface ITransferContaCorrenteApiService
     {
         Task<MovimentacaoResult> RealizarMovimentacao(string token, AccountMovementCommand command);
+        Task<ContaCorrente?> GetContaAsync(string numeroConta);
+        Task<bool> UpdateSaldoAsync(string numeroConta, decimal novoSaldo);
+        Task<bool> ValidateContaAsync(string numeroConta);
     }
 
-    public class ContaCorrenteApiService : IContaCorrenteApiService
+    public class TransferContaCorrenteApiService : ITransferContaCorrenteApiService
     {
         private readonly HttpClient _httpClient;
-        private readonly ILogger<ContaCorrenteApiService> _logger;
+        private readonly ILogger<TransferContaCorrenteApiService> _logger;
         private readonly IConfiguration _configuration;
 
-        public ContaCorrenteApiService(
+        public TransferContaCorrenteApiService(
             HttpClient httpClient,
-            ILogger<ContaCorrenteApiService> logger,
+            ILogger<TransferContaCorrenteApiService> logger,
             IConfiguration configuration)
         {
             _httpClient = httpClient;
@@ -33,7 +37,9 @@ namespace EstudoApi.Banking.Transfer.Services
         {
             try
             {
-                var baseUrl = _configuration["ApiContaCorrente:BaseUrl"] ?? "http://api-main";
+                var baseUrl = _configuration["ApiContaCorrente:BaseUrl"]
+                              ?? _configuration["ApiUrls:ContaCorrenteApi"]
+                              ?? "http://localhost:5041";
                 var endpoint = $"{baseUrl}/api/conta/movimentar";
 
                 _logger.LogInformation("Realizando movimentação via API. Endpoint: {Endpoint}, RequisicaoId: {RequisicaoId}",
@@ -84,6 +90,89 @@ namespace EstudoApi.Banking.Transfer.Services
             {
                 _logger.LogError(ex, "Erro inesperado ao chamar API de movimentação. RequisicaoId: {RequisicaoId}", command.RequisicaoId);
                 return MovimentacaoResult.Failure("Erro interno na comunicação", "INTERNAL_ERROR");
+            }
+        }
+
+        public async Task<ContaCorrente?> GetContaAsync(string numeroConta)
+        {
+            try
+            {
+                var response = await _httpClient.GetAsync($"/api/contas/{numeroConta}");
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonContent = await response.Content.ReadAsStringAsync();
+                    var conta = JsonSerializer.Deserialize<ContaCorrente>(jsonContent, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+                    return conta;
+                }
+
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao buscar conta {NumeroConta}", numeroConta);
+                return null;
+            }
+        }
+
+        public async Task<bool> UpdateSaldoAsync(string numeroConta, decimal novoSaldo)
+        {
+            try
+            {
+                var updateCommand = new { Saldo = novoSaldo };
+                var jsonContent = JsonSerializer.Serialize(updateCommand);
+                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PutAsync($"/api/contas/{numeroConta}/saldo", content);
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro ao atualizar saldo da conta {NumeroConta}", numeroConta);
+                return false;
+            }
+        }
+
+        public async Task<bool> ValidateContaAsync(string numeroConta)
+        {
+            try
+            {
+                // Primeiro, testar ping da API
+                _logger.LogInformation("Testando comunicação com API principal...");
+                var pingResponse = await _httpClient.GetAsync("/api/ping");
+
+                if (!pingResponse.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning("API principal não respondeu ao ping. Status: {StatusCode}", pingResponse.StatusCode);
+                    return false;
+                }
+
+                _logger.LogInformation("Ping OK. Validando conta {NumeroConta}...", numeroConta);
+
+                // Validar se a conta existe
+                var conta = await GetContaAsync(numeroConta);
+                var isValid = conta != null;
+
+                _logger.LogInformation("Conta {NumeroConta} é válida: {IsValid}", numeroConta, isValid);
+                return isValid;
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogError(ex, "Erro de HTTP ao validar conta {NumeroConta}", numeroConta);
+                return false;
+            }
+            catch (TaskCanceledException ex)
+            {
+                _logger.LogError(ex, "Timeout ao validar conta {NumeroConta}", numeroConta);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erro geral ao validar conta {NumeroConta}", numeroConta);
+                return false;
             }
         }
     }

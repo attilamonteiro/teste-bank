@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 using EstudoApi.Banking.Transfer.Commands;
+using EstudoApi.Banking.Transfer.Validators;
 
 namespace EstudoApi.Banking.Controllers
 {
@@ -69,6 +70,18 @@ namespace EstudoApi.Banking.Controllers
             {
                 _logger.LogInformation("Iniciando transferência. RequisicaoId: {RequisicaoId}", command.RequisicaoId);
 
+                // Validar dados básicos primeiro
+                var validationResult = TransferValidator.ValidateCommand(command);
+                if (!validationResult.IsValid)
+                {
+                    _logger.LogWarning("Dados de transferência inválidos: {Errors}", validationResult.ErrorMessage);
+                    return BadRequest(new ErrorResponse
+                    {
+                        mensagem = validationResult.ErrorMessage!,
+                        tipo = validationResult.ErrorCode!
+                    });
+                }
+
                 // Extrai o accountId do token JWT usando claims
                 var accountIdClaim = User.FindFirst("accountId")?.Value;
                 if (string.IsNullOrEmpty(accountIdClaim) || !int.TryParse(accountIdClaim, out int tokenAccountId))
@@ -82,6 +95,7 @@ namespace EstudoApi.Banking.Controllers
                 }
 
                 // Validar que o usuário só pode transferir de sua própria conta
+                // Agora que sabemos que ContaOrigem é válida (> 0), podemos comparar
                 if (command.ContaOrigem != tokenAccountId)
                 {
                     _logger.LogWarning("Tentativa de transferência não autorizada. Usuario: {UserId}, ContaOrigem: {ContaOrigem}",

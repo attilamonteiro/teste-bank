@@ -13,5 +13,6 @@ namespace EstudoApi.Domain.Interfaces.Repositories
         Task DeleteAsync(string id);
         Task<bool> ExisteContaAsync(int numero);
         Task<bool> ValidarSenhaAsync(int numero, string senha);
+        Task<Movimento> AddMovimentoAsync(Movimento movimento);
     }
 }

@@ -79,17 +79,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAuthorization();
 
 // Configurar banco de dados e dependências
-builder.Services.ConfigureInfrastructureDependencies();
-builder.Services.ConfigureDomainDependencies();
 builder.Services.AddConnections(builder.Configuration);
-
-// Configurar dependências do domínio
-builder.Services.ConfigureDomainDependencies();
-
-// Configurar dependências da infraestrutura
 builder.Services.ConfigureInfrastructureDependencies();
-
-// Configurar dependências do Banking
+builder.Services.ConfigureDomainDependencies();
 builder.Services.ConfigureBankingServices();
 
 // Configurar logging
@@ -109,6 +101,18 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Dump presence of TransferCommandHandler type before pipeline registration
+try
+{
+    var asm = typeof(EstudoApi.Banking.Configuration.BankingDependencyConfiguration).Assembly;
+    var handlerType = asm.GetType("EstudoApi.Banking.Transfer.Handlers.TransferCommandHandler");
+    Console.WriteLine(handlerType == null ? "[StartupDiag] Handler type NOT in assembly" : "[StartupDiag] Handler type found in assembly: " + handlerType.FullName);
+}
+catch (Exception ex)
+{
+    Console.WriteLine("[StartupDiag] Exception checking handler type: " + ex.Message);
+}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -132,3 +136,9 @@ logger.LogInformation("EstudoApi.Banking iniciado em {Environment} na porta 8081
     app.Environment.EnvironmentName);
 
 app.Run();
+
+// Classe Program pública para testes de integração
+namespace EstudoApi.Banking
+{
+    public partial class Program { }
+}

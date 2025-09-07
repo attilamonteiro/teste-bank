@@ -80,11 +80,11 @@ namespace EstudoApi.Infrastructure.Contexts
             {
                 b.ToTable("transferencia");
                 b.HasKey(t => t.IdTransferencia);
-                b.Property(t => t.IdTransferencia).HasMaxLength(37).IsRequired();
-                b.Property(t => t.IdContaCorrenteOrigem).HasMaxLength(37).IsRequired();
-                b.Property(t => t.IdContaCorrenteDestino).HasMaxLength(37).IsRequired();
-                b.Property(t => t.DataMovimento).HasMaxLength(25).IsRequired();
-                b.Property(t => t.Valor).HasColumnType("REAL").IsRequired();
+                b.Property(t => t.IdTransferencia).HasColumnName("idtransferencia").HasMaxLength(37).IsRequired();
+                b.Property(t => t.IdContaCorrenteOrigem).HasColumnName("idcontacorrente_origem").HasMaxLength(37).IsRequired();
+                b.Property(t => t.IdContaCorrenteDestino).HasColumnName("idcontacorrente_destino").HasMaxLength(37).IsRequired();
+                b.Property(t => t.DataMovimento).HasColumnName("datamovimento").HasMaxLength(25).IsRequired();
+                b.Property(t => t.Valor).HasColumnName("valor").HasColumnType("REAL").IsRequired();
 
                 // Relacionamentos
                 b.HasOne(t => t.ContaOrigem)
@@ -105,9 +105,9 @@ namespace EstudoApi.Infrastructure.Contexts
             {
                 b.ToTable("idempotencia");
                 b.HasKey(i => i.ChaveIdempotencia);
-                b.Property(i => i.ChaveIdempotencia).HasMaxLength(37).IsRequired();
-                b.Property(i => i.Requisicao).HasMaxLength(1000);
-                b.Property(i => i.Resultado).HasMaxLength(1000);
+                b.Property(i => i.ChaveIdempotencia).HasColumnName("chave_idempotencia").HasMaxLength(37).IsRequired();
+                b.Property(i => i.Requisicao).HasColumnName("requisicao").HasMaxLength(1000);
+                b.Property(i => i.Resultado).HasColumnName("resultado").HasMaxLength(1000);
             });
 
             // Configuração da tabela tarifa

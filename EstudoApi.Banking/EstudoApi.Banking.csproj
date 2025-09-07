@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+  <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,6 +23,15 @@
   <ItemGroup>
     <ProjectReference Include="..\EstudoApi.Domain\EstudoApi.Domain.csproj" />
     <ProjectReference Include="..\EstudoApi.Infrastructure\EstudoApi.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="Configuration\BankingDependencyConfiguration.cs" />
+    <Compile Include="Controllers\**\*.cs" />
+    <Compile Include="Transfer\**\*.cs" />
+    <Compile Include="Services\**\*.cs" />
+    <Compile Include="Properties\**\*.cs" />
   </ItemGroup>
 
 </Project>

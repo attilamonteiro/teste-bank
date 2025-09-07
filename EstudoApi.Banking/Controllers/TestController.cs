@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using EstudoApi.Banking.Services;
+using Microsoft.AspNetCore.Authorization;
+using EstudoApi.Banking.Transfer.Services;
 
 namespace EstudoApi.Banking.Controllers
 {
@@ -10,10 +11,10 @@ namespace EstudoApi.Banking.Controllers
     [Route("api/banking/test")]
     public class TestController : ControllerBase
     {
-        private readonly IContaCorrenteApiService _contaApiService;
+        private readonly ITransferContaCorrenteApiService _contaApiService;
         private readonly ILogger<TestController> _logger;
 
-        public TestController(IContaCorrenteApiService contaApiService, ILogger<TestController> logger)
+        public TestController(ITransferContaCorrenteApiService contaApiService, ILogger<TestController> logger)
         {
             _contaApiService = contaApiService;
             _logger = logger;
@@ -68,10 +69,22 @@ namespace EstudoApi.Banking.Controllers
         /// Testa validação de conta via API principal
         /// </summary>
         [HttpGet("conta/{numero}")]
+        [Authorize]
         public async Task<IActionResult> TestValidarConta(int numero)
         {
             try
             {
+                // Validar número da conta
+                if (numero <= 0)
+                {
+                    _logger.LogWarning("Número de conta inválido: {Numero}", numero);
+                    return BadRequest(new
+                    {
+                        message = "Número da conta deve ser positivo",
+                        numero = numero
+                    });
+                }
+
                 _logger.LogInformation("Testando validação da conta {Numero}", numero);
 
                 var existe = await _contaApiService.ValidateContaAsync(numero.ToString());

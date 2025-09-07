@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace EstudoApi.Infrastructure.Repositories
 {
-    public class ContaCorrenteRepository : IContaCorrenteRepository
+    public class ContaCorrenteRepository : IContaCorrenteRepository, EstudoApi.Domain.Interfaces.Repositories.IContaCorrenteRepository
     {
         private readonly AppDbContext _context;
 
@@ -89,6 +89,13 @@ namespace EstudoApi.Infrastructure.Repositories
             // Por enquanto, comparação simples (NÃO usar em produção)
             return conta.Senha == senha;
         }
+
+        public async Task<Movimento> AddMovimentoAsync(Movimento movimento)
+        {
+            await _context.Movimentos.AddAsync(movimento);
+            await _context.SaveChangesAsync();
+            return movimento;
+        }
     }
 
     // Interface para o repositório
@@ -103,5 +110,6 @@ namespace EstudoApi.Infrastructure.Repositories
         Task DeleteAsync(string id);
         Task<bool> ExisteContaAsync(int numero);
         Task<bool> ValidarSenhaAsync(int numero, string senha);
+        Task<Movimento> AddMovimentoAsync(Movimento movimento);
     }
 }

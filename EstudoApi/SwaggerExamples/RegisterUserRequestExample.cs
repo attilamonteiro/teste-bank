@@ -8,10 +8,8 @@ namespace EstudoApi.SwaggerExamples
         public RegisterUserRequest GetExamples()
         {
             return new RegisterUserRequest(
-                Nome: "João da Silva",
-                Email: "joao@email.com",
-                Senha: "minhasenha123",
-                Cpf: "12345678901"
+                Cpf: "12345678901",
+                Senha: "minhasenha123"
             );
         }
     }

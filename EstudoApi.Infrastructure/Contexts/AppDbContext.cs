@@ -11,7 +11,10 @@ namespace EstudoApi.Infrastructure.Contexts
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-        // DbSets seguindo o esquema SQLite da Ana
+        // Nova entidade unificada
+        public DbSet<ContaBancaria> ContasBancarias { get; set; }
+        
+        // DbSets seguindo o esquema SQLite da Ana (manter para compatibilidade)
         public DbSet<ContaCorrente> ContasCorrentes { get; set; }
         public DbSet<Movimento> Movimentos { get; set; }
         public DbSet<Transferencia> Transferencias { get; set; }
@@ -125,6 +128,31 @@ namespace EstudoApi.Infrastructure.Contexts
                  .WithMany()
                  .HasForeignKey(t => t.IdContaCorrente)
                  .HasPrincipalKey(cc => cc.IdContaCorrente);
+            });
+
+            // Configuração da nova entidade unificada ContaBancaria
+            builder.Entity<ContaBancaria>(b =>
+            {
+                b.ToTable("conta_bancaria");
+                b.HasKey(cb => cb.Id);
+                b.Property(cb => cb.Id).HasMaxLength(37).IsRequired();
+                b.Property(cb => cb.Numero).IsRequired();
+                b.Property(cb => cb.Cpf).HasMaxLength(11).IsRequired();
+                b.Property(cb => cb.SenhaHash).HasMaxLength(100).IsRequired();
+                b.Property(cb => cb.Salt).HasMaxLength(100).IsRequired();
+                b.Property(cb => cb.Ativo).IsRequired().HasDefaultValue(true);
+                b.Property(cb => cb.DataCriacao).IsRequired();
+                b.Property(cb => cb.DataInativacao);
+
+                // Índices únicos
+                b.HasIndex(cb => cb.Numero).IsUnique();
+                b.HasIndex(cb => cb.Cpf).IsUnique();
+
+                // Relacionamento com movimentos
+                b.HasMany(cb => cb.Movimentos)
+                 .WithOne()
+                 .HasForeignKey(m => m.IdContaCorrente)
+                 .HasPrincipalKey(cb => cb.Id);
             });
 
             // Tabelas do Identity

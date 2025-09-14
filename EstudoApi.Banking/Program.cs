@@ -6,6 +6,9 @@ using EstudoApi.Banking.Configuration;
 using EstudoApi.Domain.Configuration;
 using EstudoApi.Infrastructure.Configuration;
 
+// Garante que claims customizadas não sejam reescritas
+System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultMapInboundClaims = false;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Configurar serviços
@@ -50,9 +53,11 @@ builder.Services.AddSwaggerGen(c =>
 // Configurar JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"];
 var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtAudience = builder.Configuration["Jwt:Audience"];
 
 Console.WriteLine($"DEBUG: JWT Key = '{jwtKey}'");
 Console.WriteLine($"DEBUG: JWT Issuer = '{jwtIssuer}'");
+Console.WriteLine($"DEBUG: JWT Audience = '{jwtAudience}'");
 Console.WriteLine($"DEBUG: Environment = '{builder.Environment.EnvironmentName}'");
 
 if (string.IsNullOrEmpty(jwtKey) || string.IsNullOrEmpty(jwtIssuer))
@@ -70,9 +75,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ValidIssuer = jwtIssuer,
-            ValidAudience = jwtIssuer,
+            ValidAudience = jwtAudience ?? jwtIssuer,
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
-            ClockSkew = TimeSpan.Zero
+            ClockSkew = TimeSpan.Zero,
+            NameClaimType = System.Security.Claims.ClaimTypes.Name,
+            RoleClaimType = System.Security.Claims.ClaimTypes.Role
+        };
+        
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Console.WriteLine($"JWT Authentication failed: {context.Exception.Message}");
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine($"JWT Token validated successfully for user: {context.Principal?.Identity?.Name}");
+                return Task.CompletedTask;
+            }
         };
     });
 

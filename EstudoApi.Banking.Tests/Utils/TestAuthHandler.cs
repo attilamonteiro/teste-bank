@@ -35,7 +35,7 @@ namespace EstudoApi.Banking.Tests.Utils
                 var claims = new[]
                 {
                     new Claim(ClaimTypes.Name, "test-user"),
-                    new Claim("accountId", "123456"), // Account ID do usuário de teste
+                    new Claim("idcontacorrente", "123456"), // ID da conta corrente do usuário de teste
                     new Claim("userId", "user-test-123")
                 };
 
@@ -58,7 +58,7 @@ namespace EstudoApi.Banking.Tests.Utils
             var claimsBearer = new[]
             {
                 new Claim(ClaimTypes.Name, "test-user"),
-                new Claim("accountId", "123456"), // Account ID do usuário de teste
+                new Claim("idcontacorrente", "123456"), // ID da conta corrente do usuário de teste
                 new Claim("userId", "user-test-123")
             };
 

@@ -7,11 +7,7 @@ namespace EstudoApi.Configuration
     {
         public static IServiceCollection AddMediatRConfiguration(this IServiceCollection services)
         {
-            services.AddMediatR(
-                typeof(EstudoApi.Domain.CQRS.Handlers.Account.CreateAccountCommandHandler),
-                typeof(EstudoApi.Domain.CQRS.Handlers.Account.LoginAccountCommandHandler),
-                typeof(EstudoApi.Domain.CQRS.Handlers.Account.GetAccountBalanceQueryHandler)
-            );
+            services.AddMediatR(typeof(EstudoApi.Domain.CQRS.Handlers.ContaBancaria.CreateContaBancariaCommandHandler));
             return services;
         }
     }

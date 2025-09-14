@@ -34,12 +34,8 @@ namespace EstudoApi.Configuration
                         new string[] {}
                     }
                 });
-                c.ExampleFilters();
             });
-            services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.CreateAccountCommandExample>();
-            services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.LoginAccountCommandExample>();
-            services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.AccountMovementCommandExample>();
-            services.AddSwaggerExamplesFromAssemblyOf<EstudoApi.SwaggerExamples.InactivateAccountRequestExample>();
+            // Swagger examples removidos durante refatoração para ContaBancaria
             return services;
         }
     }

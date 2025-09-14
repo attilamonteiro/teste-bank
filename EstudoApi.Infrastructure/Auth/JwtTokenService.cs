@@ -3,9 +3,6 @@ using System.Security.Claims;
 using System.Text;
 using EstudoApi.Infrastructure.Identity;
 using Microsoft.IdentityModel.Tokens;
-
-
-using EstudoApi.Domain.Contracts;
 namespace EstudoApi.Infrastructure.Auth;
 
 public class JwtTokenService : IJwtTokenService
@@ -27,18 +24,17 @@ public class JwtTokenService : IJwtTokenService
             new(JwtRegisteredClaimNames.Sub, user.Id),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(ClaimTypes.Name, user.Nome),
-            new(ClaimTypes.Email, user.Email!),
             new("cpf", user.Cpf)
         };
 
-        // Se o usuário tiver AccountId válido, adiciona o claim accountId
-        var accountIdProp = user.GetType().GetProperty("AccountId");
+        // Se o usuário tiver IdContaCorrente válido, adiciona o claim idcontacorrente
+        var accountIdProp = user.GetType().GetProperty("IdContaCorrente");
         if (accountIdProp != null)
         {
             var accountIdValue = accountIdProp.GetValue(user);
             if (accountIdValue != null && int.TryParse(accountIdValue.ToString(), out int accId) && accId > 0)
             {
-                claims.Add(new Claim("accountId", accId.ToString()));
+                claims.Add(new Claim("idcontacorrente", accId.ToString()));
             }
         }
 
@@ -69,7 +65,7 @@ public class JwtTokenService : IJwtTokenService
             new(JwtRegisteredClaimNames.Sub, accountId.ToString()),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new(ClaimTypes.NameIdentifier, accountId.ToString()),
-            new("accountId", accountId.ToString())
+            new("idcontacorrente", accountId.ToString())
         };
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_opts.Key));

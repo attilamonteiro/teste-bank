@@ -68,6 +68,17 @@ namespace EstudoApi.Banking.Controllers
         {
             try
             {
+                _logger.LogInformation("=== DEBUG: Iniciando transferência ===");
+                _logger.LogInformation("RequisicaoId: {RequisicaoId}", command.RequisicaoId);
+                _logger.LogInformation("Headers Authorization: {Auth}", Request.Headers["Authorization"].FirstOrDefault());
+                
+                // Log de todos os claims do usuário
+                _logger.LogInformation("Claims do usuário:");
+                foreach (var claim in User.Claims)
+                {
+                    _logger.LogInformation("  {Type}: {Value}", claim.Type, claim.Value);
+                }
+
                 _logger.LogInformation("Iniciando transferência. RequisicaoId: {RequisicaoId}", command.RequisicaoId);
 
                 // Validar dados básicos primeiro
@@ -83,10 +94,13 @@ namespace EstudoApi.Banking.Controllers
                 }
 
                 // Extrai o accountId do token JWT usando claims
-                var accountIdClaim = User.FindFirst("accountId")?.Value;
-                if (string.IsNullOrEmpty(accountIdClaim) || !int.TryParse(accountIdClaim, out int tokenAccountId))
+                _logger.LogInformation("Claims disponíveis no token: {Claims}", 
+                    string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
+                
+                var contaCorrenteClaim = User.FindFirst("idcontacorrente")?.Value;
+                if (string.IsNullOrEmpty(contaCorrenteClaim) || !int.TryParse(contaCorrenteClaim, out int tokenContaId))
                 {
-                    _logger.LogWarning("Token JWT inválido ou accountId não encontrado");
+                    _logger.LogWarning("Token JWT inválido ou idcontacorrente não encontrado. ContaCorrenteClaim: {ContaCorrenteClaim}", contaCorrenteClaim);
                     return StatusCode(403, new ErrorResponse
                     {
                         mensagem = "Token inválido ou conta não identificada.",
@@ -96,10 +110,10 @@ namespace EstudoApi.Banking.Controllers
 
                 // Validar que o usuário só pode transferir de sua própria conta
                 // Agora que sabemos que ContaOrigem é válida (> 0), podemos comparar
-                if (command.ContaOrigem != tokenAccountId)
+                if (command.ContaOrigem != tokenContaId)
                 {
                     _logger.LogWarning("Tentativa de transferência não autorizada. Usuario: {UserId}, ContaOrigem: {ContaOrigem}",
-                        tokenAccountId, command.ContaOrigem);
+                        tokenContaId, command.ContaOrigem);
 
                     return StatusCode(403, new ErrorResponse
                     {

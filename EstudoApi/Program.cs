@@ -43,7 +43,7 @@ public partial class Program
         builder.Services.AddJwtAuthentication(jwtOptions);
 
         // JWT Token Service for DI
-        builder.Services.AddScoped<EstudoApi.Domain.Contracts.IJwtTokenService, EstudoApi.Infrastructure.Auth.JwtTokenService>();
+        builder.Services.AddScoped<EstudoApi.Infrastructure.Auth.IJwtTokenService, EstudoApi.Infrastructure.Auth.JwtTokenService>();
 
         builder.Services.AddAuthorization();
 

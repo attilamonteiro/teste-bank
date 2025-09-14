@@ -8,7 +8,10 @@ namespace EstudoApi.Infrastructure.Configuration
     {
         public static void ConfigureInfrastructureDependencies(this IServiceCollection services)
         {
-            // Repositórios do esquema SQLite da Ana
+            // Novo repositório unificado
+            services.AddScoped<EstudoApi.Domain.Interfaces.Repositories.IContaBancariaRepository, EstudoApi.Infrastructure.Repositories.ContaBancariaRepository>();
+            
+            // Repositórios do esquema SQLite da Ana (manter para compatibilidade)
             services.AddScoped<EstudoApi.Infrastructure.Repositories.IContaCorrenteRepository, ContaCorrenteRepository>();
             services.AddScoped<EstudoApi.Domain.Interfaces.Repositories.IContaCorrenteRepository, ContaCorrenteRepository>();
             services.AddScoped<EstudoApi.Infrastructure.Repositories.IMovimentoRepository, MovimentoRepository>();

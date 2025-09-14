@@ -28,7 +28,7 @@ namespace EstudoApi.Configuration
                     IssuerSigningKey = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(jwt.Key)),
                     ClockSkew = TimeSpan.Zero,
                     // Configuração de claims
-                    NameClaimType = "accountId",
+                    NameClaimType = System.Security.Claims.ClaimTypes.Name,
                     RoleClaimType = System.Security.Claims.ClaimTypes.Role
                 };
             });

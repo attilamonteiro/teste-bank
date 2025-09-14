@@ -6,7 +6,7 @@ namespace EstudoApi.Helpers
     {
         public static int? ExtrairNumeroConta(ClaimsPrincipal user)
         {
-            string[] possiveisNomes = new[] { "accountId", ClaimTypes.NameIdentifier, "sub" };
+            string[] possiveisNomes = new[] { "idcontacorrente", "accountId", ClaimTypes.NameIdentifier, "sub" };
             foreach (var nome in possiveisNomes)
             {
                 var valor = user.FindFirst(nome)?.Value;

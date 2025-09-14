@@ -8,7 +8,7 @@ namespace EstudoApi.SwaggerExamples
         public LoginRequest GetExamples()
         {
             return new LoginRequest(
-                Email: "joao@email.com",
+                Cpf: "12345678901",
                 Senha: "minhasenha123"
             );
         }

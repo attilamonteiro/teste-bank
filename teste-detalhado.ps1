@@ -4,10 +4,37 @@
 Write-Host "=== TESTE DETALHADO - CAPTURA DE ERRO ===" -ForegroundColor Cyan
 
 try {
+    # Gerar CPF único para o teste
+    $timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    $uniqueCpf = "987654321" + ($timestamp % 100).ToString("00")
+    Write-Host "Usando CPF: $uniqueCpf" -ForegroundColor Cyan
+
+    # 0. Cadastro da conta primeiro
+    Write-Host "`n[0] Criando conta..." -ForegroundColor Yellow
+    $cadastroBody = @{
+        cpf = $uniqueCpf
+        senha = "123456"
+    } | ConvertTo-Json
+    
+    $cadastroResponse = Invoke-WebRequest -Uri "http://localhost:5041/api/conta-bancaria/cadastrar" -Method POST -Body $cadastroBody -ContentType "application/json" -UseBasicParsing
+    
+    if ($cadastroResponse.StatusCode -eq 200) {
+        Write-Host "✅ Cadastro OK" -ForegroundColor Green
+        $cadastroData = $cadastroResponse.Content | ConvertFrom-Json
+        $numeroConta = $cadastroData.numeroConta
+        Write-Host "Número da conta: $numeroConta" -ForegroundColor Cyan
+    } else {
+        Write-Host "❌ Cadastro falhou: $($cadastroResponse.StatusCode)" -ForegroundColor Red
+        exit 1
+    }
+
     # 1. Login
     Write-Host "`n[1] Fazendo login..." -ForegroundColor Yellow
-    $loginBody = '{"numeroConta":2,"senha":"123456"}'
-    $loginResponse = Invoke-WebRequest -Uri "http://localhost:5041/api/auth/conta/login" -Method POST -Body $loginBody -ContentType "application/json" -UseBasicParsing
+    $loginBody = @{
+        cpf = $uniqueCpf
+        senha = "123456"
+    } | ConvertTo-Json
+    $loginResponse = Invoke-WebRequest -Uri "http://localhost:5041/api/conta-bancaria/login" -Method POST -Body $loginBody -ContentType "application/json" -UseBasicParsing
     
     if ($loginResponse.StatusCode -eq 200) {
         Write-Host "✅ Login OK" -ForegroundColor Green
@@ -23,7 +50,7 @@ try {
     Write-Host "`n[2] Testando transferência com captura de erro..." -ForegroundColor Yellow
     $transferBody = @{
         requisicaoId = [System.Guid]::NewGuid().ToString()
-        contaOrigem = 2
+        contaOrigem = $numeroConta
         contaDestino = 3
         valor = 25.00
     } | ConvertTo-Json

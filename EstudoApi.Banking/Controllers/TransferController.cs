@@ -71,7 +71,7 @@ namespace EstudoApi.Banking.Controllers
                 _logger.LogInformation("=== DEBUG: Iniciando transferência ===");
                 _logger.LogInformation("RequisicaoId: {RequisicaoId}", command.RequisicaoId);
                 _logger.LogInformation("Headers Authorization: {Auth}", Request.Headers["Authorization"].FirstOrDefault());
-                
+
                 // Log de todos os claims do usuário
                 _logger.LogInformation("Claims do usuário:");
                 foreach (var claim in User.Claims)
@@ -94,9 +94,9 @@ namespace EstudoApi.Banking.Controllers
                 }
 
                 // Extrai o accountId do token JWT usando claims
-                _logger.LogInformation("Claims disponíveis no token: {Claims}", 
+                _logger.LogInformation("Claims disponíveis no token: {Claims}",
                     string.Join(", ", User.Claims.Select(c => $"{c.Type}={c.Value}")));
-                
+
                 var contaCorrenteClaim = User.FindFirst("idcontacorrente")?.Value;
                 if (string.IsNullOrEmpty(contaCorrenteClaim) || !int.TryParse(contaCorrenteClaim, out int tokenContaId))
                 {

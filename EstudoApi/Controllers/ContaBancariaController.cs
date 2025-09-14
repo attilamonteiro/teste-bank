@@ -87,7 +87,7 @@ namespace EstudoApi.Controllers
                 {
                     // Gerar token JWT usando o método específico para conta
                     var (token, expiresAt) = _jwtTokenService.CreateTokenForAccount(result.Conta.Numero);
-                    
+
                     return Ok(new
                     {
                         token = token,

@@ -27,7 +27,7 @@ namespace EstudoApi.Banking.Tests.Utils
             }
 
             var authHeader = Request.Headers["Authorization"].ToString();
-            
+
             // Se é o esquema de teste simples "Test" = válido
             if (authHeader == "Test")
             {
@@ -45,9 +45,9 @@ namespace EstudoApi.Banking.Tests.Utils
 
                 return Task.FromResult(AuthenticateResult.Success(ticket));
             }
-            
+
             // Se não tem Bearer token ou é "invalid"
-            if (string.IsNullOrEmpty(authHeader) || 
+            if (string.IsNullOrEmpty(authHeader) ||
                 !authHeader.StartsWith("Bearer ") ||
                 authHeader.Contains("invalid"))
             {
